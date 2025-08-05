@@ -21,32 +21,38 @@
 <body>
   <h2>Scan Barcode (All Formats)</h2>
   <video id="video" autoplay muted playsinline></video>
-  <div id="result">Scanning...</div>
+  <div id="result">Initializing camera...</div>
  
-<script src="https://unpkg.com/@zxing/library@latest"></script>
+  <script src="https://unpkg.com/@zxing/library@latest"></script>
   <script>
     const codeReader = new ZXing.BrowserMultiFormatReader();
     const videoElement = document.getElementById('video');
     const resultElement = document.getElementById('result');
  
-    function startScanner() {
-      ZXing.BrowserMultiFormatReader.listVideoInputDevices()
-        .then(videoInputDevices => {
-          const backCamera = videoInputDevices.find(device => /back|rear|environment/i.test(device.label)) || videoInputDevices[0];
-          return codeReader.decodeFromVideoDevice(backCamera.deviceId, videoElement, (result, err) => {
-            if (result) {
-              resultElement.textContent = "Scanned: " + result.getText();
-            } else if (err && !(err instanceof ZXing.NotFoundException)) {
-              resultElement.textContent = "Error: " + err;
-            }
-          });
-        })
-        .catch(err => {
-          resultElement.textContent = "Camera error: " + err;
+    async function startScanner() {
+      try {
+        const devices = await ZXing.BrowserMultiFormatReader.listVideoInputDevices();
+        const backCam = devices.find(device => /back|rear|environment/i.test(device.label)) || devices[0];
+ 
+        if (!backCam) {
+          resultElement.textContent = "No camera found.";
+          return;
+        }
+ 
+        codeReader.decodeFromVideoDevice(backCam.deviceId, videoElement, (result, err) => {
+          if (result) {
+            resultElement.textContent = "Scanned: " + result.getText();
+          } else if (err && !(err instanceof ZXing.NotFoundException)) {
+            resultElement.textContent = "Error: " + err;
+          }
         });
+      } catch (err) {
+        resultElement.textContent = "Camera access error: " + err.message;
+      }
     }
  
     startScanner();
   </script>
 </body>
 </html>
+ 
