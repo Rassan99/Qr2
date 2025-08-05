@@ -1,80 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>ZXing Camera & Upload Scanner</title>
-<script src="https://unpkg.com/@zxing/library@0.18.6/umd/index.min.js"></script>
+  <meta charset="UTF-8">
+  <title>Multi-Format Barcode Scanner</title>
   <style>
-    body {
-      font-family: sans-serif;
-      text-align: center;
-      padding: 20px;
-    }
- 
     video {
       width: 100%;
-      max-width: 400px;
-      aspect-ratio: 3 / 4;
+      max-width: 480px;
+      aspect-ratio: 3/4;
       border: 1px solid #ccc;
+      margin-bottom: 1rem;
     }
- 
     #result {
-      font-size: 1.2rem;
-      margin-top: 15px;
-      font-weight: bold;
-    }
- 
-    input[type="file"] {
-      margin-top: 20px;
+      font-size: 1rem;
+      font-family: monospace;
+      word-break: break-word;
     }
   </style>
 </head>
 <body>
-  <h2>Scan EAN-13, QR & Data Matrix</h2>
-  <video id="video" muted autoplay playsinline></video>
-  <br />
-  <input type="file" id="upload" accept="image/*">
-  <div id="result">Waiting for scan...</div>
+  <h2>Scan Barcode (All Formats)</h2>
+  <video id="video" autoplay muted playsinline></video>
+  <div id="result">Scanning...</div>
  
+<script src="https://unpkg.com/@zxing/library@latest"></script>
   <script>
     const codeReader = new ZXing.BrowserMultiFormatReader();
-    const resultElem = document.getElementById('result');
-    const videoElem = document.getElementById('video');
-    const uploadElem = document.getElementById('upload');
+    const videoElement = document.getElementById('video');
+    const resultElement = document.getElementById('result');
  
-    codeReader
-      .listVideoInputDevices()
-      .then(videoInputDevices => {
-        const rearCamera = videoInputDevices.find(device =>
-          /back|rear|environment/i.test(device.label)
-        ) || videoInputDevices[0];
- 
-        return codeReader.decodeFromVideoDevice(rearCamera.deviceId, videoElem, (result, err) => {
-          if (result) {
-            resultElem.textContent = `Detected: ${result.getText()}`;
-          }
-        });
-      })
-      .catch(err => {
-        resultElem.textContent = `Camera error: ${err}`;
-      });
- 
-    uploadElem.addEventListener('change', (e) => {
-const file = e.target.files[0];
-      if (!file) return;
- 
-      const img = new Image();
-      img.src = URL.createObjectURL(file);
-      img.onload = () => {
-        codeReader.decodeFromImage(img)
-          .then(result => {
-            resultElem.textContent = `Detected from image: ${result.getText()}`;
-          })
-          .catch(() => {
-            resultElem.textContent = "No barcode found in image.";
+    function startScanner() {
+      ZXing.BrowserMultiFormatReader.listVideoInputDevices()
+        .then(videoInputDevices => {
+          const backCamera = videoInputDevices.find(device => /back|rear|environment/i.test(device.label)) || videoInputDevices[0];
+          return codeReader.decodeFromVideoDevice(backCamera.deviceId, videoElement, (result, err) => {
+            if (result) {
+              resultElement.textContent = "Scanned: " + result.getText();
+            } else if (err && !(err instanceof ZXing.NotFoundException)) {
+              resultElement.textContent = "Error: " + err;
+            }
           });
-      };
-    });
+        })
+        .catch(err => {
+          resultElement.textContent = "Camera error: " + err;
+        });
+    }
+ 
+    startScanner();
   </script>
 </body>
 </html>
